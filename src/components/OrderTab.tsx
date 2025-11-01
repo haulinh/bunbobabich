@@ -10,7 +10,7 @@ import { Plus, Minus, Receipt } from "lucide-react";
 export default function OrderTab() {
   const [table, setTable] = useState<number | null>(null);
   const [selectedItems, setSelectedItems] = useState<
-    Map<string, { qty: number; note: string }>
+    Map<string, { qty: number; notes: string[] }>
   >(new Map());
 
   const addOrder = useOrderStore((state) => state.addOrder);
@@ -18,23 +18,38 @@ export default function OrderTab() {
   const updateItemQty = (menuId: string, delta: number) => {
     setSelectedItems((prev) => {
       const newMap = new Map(prev);
-      const current = newMap.get(menuId) || { qty: 0, note: "" };
+      const current = newMap.get(menuId) || { qty: 0, notes: [] };
       const newQty = Math.max(0, current.qty + delta);
       
       if (newQty === 0) {
         newMap.delete(menuId);
       } else {
-        newMap.set(menuId, { ...current, qty: newQty });
+        // Adjust notes array to match new quantity
+        const newNotes = [...current.notes];
+        if (delta > 0) {
+          // Adding items - add empty note strings
+          for (let i = 0; i < delta; i++) {
+            newNotes.push("");
+          }
+        } else {
+          // Removing items - remove from end
+          for (let i = 0; i < -delta; i++) {
+            newNotes.pop();
+          }
+        }
+        newMap.set(menuId, { qty: newQty, notes: newNotes });
       }
       return newMap;
     });
   };
 
-  const updateItemNote = (menuId: string, note: string) => {
+  const updateItemNote = (menuId: string, index: number, note: string) => {
     setSelectedItems((prev) => {
       const newMap = new Map(prev);
-      const current = newMap.get(menuId) || { qty: 0, note: "" };
-      newMap.set(menuId, { ...current, note });
+      const current = newMap.get(menuId) || { qty: 0, notes: [] };
+      const newNotes = [...current.notes];
+      newNotes[index] = note;
+      newMap.set(menuId, { ...current, notes: newNotes });
       return newMap;
     });
   };
@@ -52,7 +67,7 @@ export default function OrderTab() {
             name: menuItem.name,
             qty: 1,
             price: menuItem.price,
-            note: value.note || undefined,
+            note: value.notes[i] || undefined,
           });
         }
       }
@@ -128,16 +143,21 @@ export default function OrderTab() {
                   >
                     <Plus size={20} strokeWidth={3} />
                   </button>
-                  <div className="flex-1 ml-4">
-                    <input
-                      type="text"
-                      placeholder="Ghi chú"
-                      value={itemData?.note || ""}
-                      onChange={(e) => updateItemNote(menuItem.id, e.target.value)}
-                      className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm font-medium text-gray-800 bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-200 focus:outline-none shadow-sm placeholder:text-gray-400"
-                    />
-                  </div>
                 </div>
+                {qty > 0 && (
+                  <div className="space-y-2 ml-[72px]">
+                    {itemData?.notes.map((note, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        placeholder={qty === 1 ? "Ghi chú" : `Ghi chú cho món ${idx + 1}`}
+                        value={note}
+                        onChange={(e) => updateItemNote(menuItem.id, idx, e.target.value)}
+                        className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg text-sm font-medium text-gray-800 bg-white focus:border-blue-600 focus:ring-2 focus:ring-blue-200 focus:outline-none shadow-sm placeholder:text-gray-400"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
