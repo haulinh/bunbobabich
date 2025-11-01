@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 import { getTodayKey } from "@/utils/dateKey";
 import type { TableOrder, OrderItem } from "@/types";
 
@@ -16,6 +16,9 @@ interface OrderStore {
   checkNewDay: () => void;
 }
 
+// Consistent storage key for the store
+const STORAGE_KEY = "bunbobabich-order-store";
+
 function getDefaultState() {
   const today = getTodayKey();
   return {
@@ -25,6 +28,57 @@ function getDefaultState() {
     history: [],
   };
 }
+
+// Custom storage implementation with date-based key management
+const customStorage: StateStorage = {
+  getItem: (name: string): string | null => {
+    try {
+      if (typeof window === "undefined") return null;
+      const today = getTodayKey();
+      const stored = localStorage.getItem(name);
+      
+      if (!stored) return null;
+      
+      const parsed = JSON.parse(stored);
+      const storedKey = parsed?.state?.key;
+      
+      // If stored data is from a different day, return null to trigger reset
+      if (storedKey !== today) {
+        return null;
+      }
+      
+      return stored;
+    } catch (error) {
+      console.warn("Failed to get item from localStorage:", error);
+      return null;
+    }
+  },
+  setItem: (name: string, value: string): void => {
+    try {
+      if (typeof window === "undefined") return;
+      
+      // Ensure the state includes today's key before storing
+      const parsed = JSON.parse(value);
+      const today = getTodayKey();
+      
+      if (parsed?.state) {
+        parsed.state.key = today;
+      }
+      
+      localStorage.setItem(name, JSON.stringify(parsed));
+    } catch (error) {
+      console.warn("Failed to set item in localStorage:", error);
+    }
+  },
+  removeItem: (name: string): void => {
+    try {
+      if (typeof window === "undefined") return;
+      localStorage.removeItem(name);
+    } catch (error) {
+      console.warn("Failed to remove item from localStorage:", error);
+    }
+  },
+};
 
 export const useOrderStore = create<OrderStore>()(
   persist(
@@ -108,26 +162,25 @@ export const useOrderStore = create<OrderStore>()(
       },
     }),
     {
-      name: getTodayKey(),
-      storage: {
-        getItem: (name: string): string | null => {
-          const today = getTodayKey();
-          return localStorage.getItem(today);
-        },
-        setItem: (name: string, value: string): void => {
-          const today = getTodayKey();
-          localStorage.setItem(today, value);
-        },
-        removeItem: (name: string): void => {
-          const today = getTodayKey();
-          localStorage.removeItem(today);
-        },
-      },
-      onRehydrateStorage: () => (state) => {
+      name: STORAGE_KEY,
+      storage: createJSONStorage(() => customStorage),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.warn("Failed to rehydrate order store:", error);
+          return;
+        }
+        
         if (state) {
           state.checkNewDay();
         }
       },
+      // Only persist state data, not actions
+      partialize: (state) => ({
+        key: state.key,
+        serving: state.serving,
+        waitingPayment: state.waitingPayment,
+        history: state.history,
+      }),
     }
   )
 );

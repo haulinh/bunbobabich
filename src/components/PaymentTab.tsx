@@ -88,10 +88,18 @@ export default function PaymentTab() {
               </div>
 
               <div className="space-y-2">
-                <label className="flex items-center gap-2">
-                  <span>💵</span>
-                  <span className="font-medium text-gray-800">Tiền khách đưa:</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2">
+                    <span>💵</span>
+                    <span className="font-medium text-gray-800">Tiền khách đưa:</span>
+                  </label>
+                  <button
+                    onClick={() => handlePaymentInput(order.id, total)}
+                    className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-md font-medium transition-colors border border-blue-300"
+                  >
+                    ⚡ Fill Full Bill
+                  </button>
+                </div>
                 <input
                   type="number"
                   min="0"
