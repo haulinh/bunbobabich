@@ -61,30 +61,34 @@ export default function ServingTab() {
               {order.items.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0"
+                  className="py-2 border-b border-gray-200 last:border-b-0"
                 >
-                  <span className="flex-1 text-gray-700">
-                    {item.qty}x {item.name} ({formatCurrency(item.price)})
-                    {item.note && (
-                      <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded ml-2 border border-orange-300">
-                        - {item.note}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="flex-1 text-gray-700">
+                      {item.qty}x {item.name} ({formatCurrency(item.price)})
+                    </span>
+                    <button
+                      onClick={() => handleToggleItem(order.id, item.id)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors border-2 ${
+                        item.served
+                          ? "bg-green-500 text-white border-green-600"
+                          : "bg-gray-300 hover:bg-gray-400 border-gray-400 text-gray-700"
+                      }`}
+                    >
+                      {item.served ? (
+                        <CheckCircle2 size={20} />
+                      ) : (
+                        <Check size={20} />
+                      )}
+                    </button>
+                  </div>
+                  {item.note && (
+                    <div className="ml-0 mt-1">
+                      <span className="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded inline-block border border-orange-300">
+                        📝 {item.note}
                       </span>
-                    )}
-                  </span>
-                  <button
-                    onClick={() => handleToggleItem(order.id, item.id)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors border-2 ${
-                      item.served
-                        ? "bg-green-500 text-white border-green-600"
-                        : "bg-gray-300 hover:bg-gray-400 border-gray-400 text-gray-700"
-                    }`}
-                  >
-                    {item.served ? (
-                      <CheckCircle2 size={20} />
-                    ) : (
-                      <Check size={20} />
-                    )}
-                  </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
